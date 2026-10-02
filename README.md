@@ -5,7 +5,7 @@ construído com **Spark SQL** no **Databricks Serverless**.
 
 ---
 
-## 🔗 Dashboard Publicado
+## 🔗 Dashboard 
 
 **[Acesse o dashboard ao vivo →](https://dbc-487363e2-3add.cloud.databricks.com/dashboardsv3/01f1be8f35cf1b5cb74fbcc33ef34b11/published?o=7474654958318993)**
 
