@@ -117,7 +117,7 @@ oportunidades de melhoria de margem e padrões de sazonalidade.
 ```
 superstore-sales-dashboard/
 │
-├── superstore_sales_analysis.sql   # Queries completas
+├── ├── FATURAMENTO.ipynb               # Notebook com queries
 └── README.md                       # Documentação e insights
 ```
 
