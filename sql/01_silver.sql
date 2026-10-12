@@ -14,7 +14,14 @@ SELECT
   TRIM(Country) AS country,
   TRIM(City) AS city,
   TRIM(State) AS state,
-  CAST(`Postal Code` AS STRING) AS postal_code,
+  CAST(`Postal Code` AS STRING) AS postal_code_source,
+  CASE WHEN TRIM(Country) = 'United States'
+             AND LENGTH(CAST(`Postal Code` AS STRING)) = 4
+       THEN LPAD(CAST(`Postal Code` AS STRING), 5, '0')
+       ELSE CAST(`Postal Code` AS STRING)
+  END AS postal_code,
+  TRIM(Country) = 'United States'
+    AND LENGTH(CAST(`Postal Code` AS STRING)) = 4 AS postal_code_inferred_zero,
   TRIM(Region) AS region,
   TRIM(`Product ID`) AS source_product_id,
   TRIM(`Product Name`) AS product_name,
