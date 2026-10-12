@@ -40,3 +40,7 @@ Em 2017, Office Supplies com desconto acima de 30% registrou US$ 14.619,25 de ve
 ## Próximos controles
 
 Recuperar o CSV original e sua proveniência; auditar codificação e tipo de CEP na ingestão; criar testes que interrompam a atualização da gold em caso de falha; medir a concentração das perdas; validar exportação estática do dashboard.
+
+## Concentração de perdas em Office Supplies, desconto >30%, 2017
+
+As 232 linhas do recorte tiveram prejuízo: US$ 18.437,59 de prejuízo bruto e líquido. Os cinco piores registros somam US$ 8.905,55 (48,30%); os 20 piores, US$ 14.592,77 (79,15%). Binders responde por US$ 15.800,57 (85,70%); Appliances, US$ 2.637,02. Entre os maiores registros aparecem descontos de 70% e 80%. Esses resultados priorizam auditoria de preços e custos, sem estimar um efeito causal do desconto. Consulta em `sql/04_discount_eda.sql`.
