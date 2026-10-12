@@ -48,3 +48,7 @@ As 232 linhas do recorte tiveram prejuízo: US$ 18.437,59 de prejuízo bruto e l
 ## Metadados da tabela de entrada
 
 `DESCRIBE EXTENDED workspace.default.sample_superstore` confirma uma tabela Delta gerenciada criada em 02/10/2026 18:08:40 UTC pela interface de upload, com 9.994 linhas. O catálogo não expôs o caminho, hash nem as opções do CSV original. `Postal Code` já foi interpretado como BIGINT; converter esse valor para STRING na silver não recupera zeros à esquerda possivelmente perdidos durante a importação. Na futura ingestão do arquivo original, ler CEP como texto e comparar com a versão atual.
+
+## CEPs com quatro dígitos após o upload
+
+A tabela importada contém 449 linhas e 52 valores distintos de `Postal Code` com quatro dígitos, em Connecticut, Maine, Massachusetts, New Hampshire, New Jersey, Rhode Island e Vermont. Outras 9.545 linhas têm cinco dígitos. Isso é consistente com zeros iniciais descartados pela conversão numérica, mas o CSV original ainda não foi conferido. A silver mantém `postal_code_source` como texto do número importado, deriva `postal_code` com `LPAD(..., 5, '0')` apenas nos valores de quatro dígitos dos EUA e marca `postal_code_inferred_zero`. Trata-se de inferência reversível, não de valor confirmado da fonte.
