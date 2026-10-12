@@ -1,124 +1,57 @@
-# 📊 Superstore Sales Dashboard — SQL on Databricks
+# Superstore Sales | engenharia de dados no Databricks
 
-Dashboard de vendas com KPIs executivos, análise de tendência e insights de rentabilidade,  
-construído com **Spark SQL** no **Databricks Serverless**.
+Projeto em evolução: do notebook exploratório para um pipeline SQL com contratos de qualidade, camada tratada e agregações para análise. O dashboard original continua disponível no [Databricks](https://dbc-487363e2-3add.cloud.databricks.com/dashboardsv3/01f1be8f35cf1b5cb74fbcc33ef34b11/published?o=7474654958318993). Um dashboard em HTML, CSS e JavaScript será construído após a exportação validada dos dados.
 
----
+## Pergunta de negócio
 
-## 🔗 Dashboard 
+Como acompanhar vendas e rentabilidade por período, região e categoria sem mascarar problemas de qualidade ou multiplicar valores em joins?
 
-**[Acesse o dashboard ao vivo →](https://dbc-487363e2-3add.cloud.databricks.com/dashboardsv3/01f1be8f35cf1b5cb74fbcc33ef34b11/published?o=7474654958318993)**
+## Fonte e limites
 
----
+[Superstore Sales — Kaggle](https://www.kaggle.com/datasets/vivek468/superstore-dataset-final), 9.994 linhas de itens de pedido, 21 campos, 2014–2017. A fonte atual no Databricks é `workspace.default.sample_superstore`, já importada. **Não há evidência de coleta direta de um sistema operacional nem de dados brutos originalmente sujos.** O arquivo, sua versão, hash e opções de ingestão ainda precisam ser documentados. Os nomes de produtos com `�` não serão reconstruídos por suposição.
 
-## 🎯 Objetivo
+## Arquitetura atual
 
-Analisar o desempenho de vendas de uma empresa de varejo B2B, identificando
-oportunidades de melhoria de margem e padrões de sazonalidade.
-
----
-
-## 🗂️ Dataset
-
-- **Fonte:** [Superstore Sales — Kaggle](https://www.kaggle.com/datasets/vivek468/superstore-dataset-final)
-- **Volume:** 9.994 transações | 21 variáveis | 2014–2017
-- **Categorias:** Furniture, Office Supplies, Technology
-
----
-
-## 🛠️ Stack
-
-| Ferramenta | Uso |
-|---|---|
-| Databricks Serverless | Execução SQL e Dashboard |
-| Spark SQL | Análise e transformação |
-| Databricks Lakeview | Visualizações e Dashboard |
-| GitHub | Versionamento e portfólio |
-
----
-
-## 📊 KPIs do Negócio
-
-| Métrica | Valor |
-|---|---|
-| Faturamento Total | \$2.297.200 |
-| Lucro Total | \$286.397 |
-| Total de Pedidos | 5.009 |
-| Ticket Médio | \$458,61 |
-| Margem de Lucro | 12,47% |
-
----
-
-## 💡 Principais Insights
-
-### 1 — Technology lidera em faturamento e margem
-| Categoria | Faturamento | Margem |
-|---|---|---|
-| Technology | \$836.154 | 17,40% 🟢 |
-| Furniture | \$741.999 | 2,49% 🔴 |
-| Office Supplies | \$719.047 | 17,04% 🟢 |
-
----
-
-### 2 — Furniture tem subcategorias no prejuízo
-| Subcategoria | Faturamento | Margem |
-|---|---|---|
-| Chairs | \$328.449 | 8,10% 🟡 |
-| Tables | \$206.965 | **-8,56%** 🔴 |
-| Bookcases | \$114.880 | **-3,02%** 🔴 |
-
-> Tables e Bookcases geram \$321k em receita mas operam com prejuízo real.
-
----
-
-### 3 — Sazonalidade clara: picos em Set/Nov/Dez
-> Q4 (Out-Dez) concentra os maiores volumes — típico de varejo B2B  
-> com fechamento de orçamento corporativo no fim do ano.  
-> Q1 (Jan-Fev) é consistentemente o período mais fraco.
-
----
-
-### 4 — West lidera com a melhor margem regional
-| Região | Faturamento | Margem |
-|---|---|---|
-| West | \$725.457 | 14,94% 🟢 |
-| East | \$678.781 | 13,48% 🟢 |
-| Central | \$501.239 | **7,92%** 🔴 |
-| South | \$391.721 | 11,93% 🟡 |
-
----
-
-### 5 — Descontos acima de 20% destroem a margem
-| Faixa de Desconto | Margem | Lucro |
-|---|---|---|
-| Sem desconto | 29,51% 🟢 | +\$320.987 |
-| 1–10% | 16,61% 🟢 | +\$9.029 |
-| 11–20% | 11,58% 🟡 | +\$91.756 |
-| 21–30% | -10,05% 🔴 | -\$10.369 |
-| Acima de 30% | **-48,16%** 🔴 | **-\$125.006** |
-
-> A empresa perde \$135k em itens com desconto acima de 20%.  
-> Esta é a principal causa da baixa margem em Furniture e na região Central.
-
----
-
-## 🧠 Técnicas SQL Utilizadas
-
-- **CTEs encadeadas** (`WITH`) para modularizar transformações complexas
-- **Window Functions** (`LAG()`, `RANK()`, `SUM() OVER()`, `AVG() OVER()`)
-- **CASE WHEN** para criação de faixas e segmentos
-- **DATE_FORMAT** para agregação temporal
-- **CAST** para tratamento de tipos
-
----
-
-## 📁 Estrutura do Projeto
-
-```
-superstore-sales-dashboard/
-│
-├── ├── FATURAMENTO.ipynb               # Notebook com queries
-└── README.md                       # Documentação e insights
+```text
+sample_superstore (tabela previamente importada)
+    → silver_order_lines (tipos, nomes, chave de produto, sinalizadores)
+    → gold_month_region_category (métricas aditivas)
+    → exportação JSON validada (planejada)
+    → dashboard HTML/CSS/JS (planejado)
 ```
 
----
+A camada de landing/bronze do arquivo original, a modelagem preditiva e o dashboard web **ainda não foram implementados**.
+
+## Como reproduzir no Databricks Free Edition
+
+1. Disponibilize o mesmo Superstore em `workspace.default.sample_superstore`. Se usar outra tabela, altere a referência nos arquivos SQL.
+2. Execute [`sql/01_silver.sql`](sql/01_silver.sql).
+3. Execute [`sql/02_quality_gate.sql`](sql/02_quality_gate.sql); todos os cinco campos devem retornar `PASSOU`. Se algum falhar, interrompa a atualização da gold e investigue.
+4. Execute [`sql/03_gold_month_region_category.sql`](sql/03_gold_month_region_category.sql) e confira 48 meses, 9.994 linhas representadas, US$ 2.297.200,86 em vendas e US$ 286.397,02 em lucro.
+
+Os scripts são Databricks SQL; não exigem instalação local. O gate foi executado manualmente; orquestração automática ainda é trabalho futuro.
+
+## Evidências e decisões
+
+A auditoria encontrou 32 `Product ID` com nomes de produtos diferentes (337 linhas; US$ 97.465,67 em vendas). Por isso, `Product ID` sozinho não é chave de dimensão. A silver deriva uma chave do par ID + nome e preserva todas as linhas. Há 278 linhas com caractere de substituição nos nomes, registradas sem correção arbitrária. A gold tem 573 grupos de mês × região × categoria e reconcilia os valores com a origem. Veja [auditoria e limitações](docs/data-quality.md).
+
+Em 2017 as vendas cresceram 20,36% frente a 2016, mas a margem caiu de 13,43% para 12,74%. Em Furniture ela caiu de 3,50% para 1,40%. Faixas de desconto mais altas coincidem com prejuízos maiores; **não há inferência causal** a partir dessa associação.
+
+## Próximas entregas
+
+- Rastrear a origem do CSV e a codificação; implementar landing/bronze com metadados de ingestão.
+- Automatizar o gate de qualidade e exportar dados agregados com checagem de totais.
+- Publicar o dashboard estático em HTML/CSS/JS.
+- Avaliar previsão com baseline sazonal, validação temporal e análise de erros. Com apenas 48 meses, evitar prometer ganho de ML antes de medir.
+- Documentar o resultado final e redigir o post técnico de LinkedIn.
+
+## Estrutura
+
+```text
+FATURAMENTO.ipynb
+sql/01_silver.sql
+sql/02_quality_gate.sql
+sql/03_gold_month_region_category.sql
+docs/data-quality.md
+README.md
+```
