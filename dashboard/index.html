@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <title>Superstore | Revenue Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Navegação">
+      <a class="brand" href="#overview"><span class="brand-mark">S<span>.</span></span><span>SUPERSTORE<small>DATA INTELLIGENCE</small></span></a>
+      <div class="nav-label">EXPLORAR</div>
+      <nav>
+        <a class="active" href="#overview"><span>◫</span> Visão geral</a>
+        <a href="#trend"><span>⌁</span> Tendência</a>
+        <a href="#segments"><span>▦</span> Segmentos</a>
+        <a href="#model"><span>◇</span> Modelagem</a>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span> Dados auditados<br><small>Databricks · 2014–2017</small></div>
+    </aside>
+
+    <main id="overview">
+      <header class="topbar">
+        <div class="breadcrumb">Portfólio <span>/</span> Superstore <span>/</span> Visão geral</div>
+        <div class="top-right"><span class="live-dot"></span> Snapshot validado <span class="top-divider"></span> 9.994 linhas</div>
+      </header>
+
+      <div class="content">
+        <div class="heading-row">
+          <div><div class="eyebrow">REVENUE INTELLIGENCE <span class="eyebrow-line"></span> 01 / 04</div><h1>Desempenho de vendas<span class="period">.</span></h1><p class="subtitle">Receita, rentabilidade e comportamento mensal em uma visão.</p></div>
+          <div class="source-pill"><span class="status-dot"></span> Fonte: Databricks Gold</div>
+        </div>
+
+        <section class="filters" aria-label="Filtros do dashboard">
+          <div class="filter-head"><span>FILTROS</span><button id="reset-filters" type="button">Limpar seleção ↗</button></div>
+          <div class="filter-grid">
+            <label>Ano<select id="year-filter"><option value="all">Todos os anos</option></select></label>
+            <label>Região<select id="region-filter"><option value="all">Todas as regiões</option></select></label>
+            <label>Categoria<select id="category-filter"><option value="all">Todas as categorias</option></select></label>
+          </div>
+        </section>
+
+        <div id="data-error" class="error" hidden role="alert"></div>
+        <div class="section-kicker"><span>01</span> INDICADORES <div></div><small id="selection-caption">2014–2017 · Todos os segmentos</small></div>
+        <section class="kpis" aria-label="Indicadores principais">
+          <article class="kpi"><div class="kpi-top">FATURAMENTO <span>↗</span></div><strong id="sales-kpi">—</strong><div class="kpi-foot">Soma das vendas <span>USD</span></div></article>
+          <article class="kpi"><div class="kpi-top">LUCRO <span>◇</span></div><strong id="profit-kpi">—</strong><div class="kpi-foot">Soma dos resultados <span>USD</span></div></article>
+          <article class="kpi"><div class="kpi-top">MARGEM <span>◈</span></div><strong id="margin-kpi">—</strong><div class="kpi-foot">Lucro ÷ faturamento <span>%</span></div></article>
+          <article class="kpi"><div class="kpi-top">ITENS DE PEDIDO <span>▤</span></div><strong id="lines-kpi">—</strong><div class="kpi-foot">Linhas representadas <span>QTD.</span></div></article>
+        </section>
+
+        <section class="chart-card" id="trend">
+          <div class="card-head"><div><div class="card-index">02 / EVOLUÇÃO</div><h2>Tendência mensal</h2><p>Vendas e lucro no período selecionado</p></div><div class="legend"><span><i class="swatch cyan"></i> Vendas</span><span><i class="swatch purple"></i> Lucro · escala direita</span></div></div>
+          <div class="chart-wrap"><svg id="trend-chart" role="img" aria-label="Gráfico mensal de vendas e lucro" preserveAspectRatio="none"></svg><div id="chart-tooltip" class="chart-tooltip" hidden></div></div>
+          <div class="chart-note">Passe o cursor sobre o gráfico para consultar um mês. Valores agregados após os filtros.</div>
+        </section>
+
+        <section class="split-grid" id="segments">
+          <article class="panel"><div class="card-head"><div><div class="card-index">03 / CATEGORIAS</div><h2>Mix de receita</h2><p>Participação e margem por categoria</p></div></div><div id="category-bars" class="bars"></div></article>
+          <article class="panel"><div class="card-head"><div><div class="card-index">04 / REGIÕES</div><h2>Performance regional</h2><p>Receita e rentabilidade comparadas</p></div></div><div id="region-list" class="region-list"></div></article>
+        </section>
+
+        <section class="model-card" id="model"><div><div class="card-index">05 / MODELO PREDITIVO</div><h2>Previsão: ganho com ressalvas<span class="period">.</span></h2><p>Ridge superou os baselines escolhidos em 2016 no teste de 2017. Ainda subestimou vendas em todas as categorias, sobretudo nos picos. O teste avalia um mês à frente com histórico atualizado a cada mês.</p></div><div class="model-metrics"><div><span>FURNITURE</span><strong>41,32%</strong><small>WAPE Ridge · baseline 44,22%</small></div><div><span>OFFICE SUPPLIES</span><strong>40,86%</strong><small>WAPE Ridge · baseline 53,26%</small></div><div><span>TECHNOLOGY</span><strong>55,79%</strong><small>WAPE Ridge · baseline 76,08%</small></div></div></section>
+
+        <footer><div>SUPERSTORE <span>·</span> DATA INTELLIGENCE</div><p>Dados de demonstração Superstore. Fonte já importada no Databricks; 573 grupos exportados. Margens recalculadas após cada filtro. Não representa operação real nem efeito causal de descontos.</p><a href="https://github.com/AlexandreSantosRodrigues/superstore-sales-dashboard" target="_blank" rel="noopener noreferrer">Ver metodologia no GitHub ↗</a></footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
