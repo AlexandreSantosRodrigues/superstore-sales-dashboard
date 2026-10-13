@@ -1,67 +1,145 @@
-# Superstore Sales | engenharia de dados no Databricks
+# Superstore Sales — qualidade de dados, rentabilidade e previsão
 
-Projeto em evolução: do notebook exploratório para um pipeline SQL com contratos de qualidade, camada tratada e agregações para análise. O dashboard original continua disponível no [Databricks](https://dbc-487363e2-3add.cloud.databricks.com/dashboardsv3/01f1be8f35cf1b5cb74fbcc33ef34b11/published?o=7474654958318993). O [dashboard em HTML, CSS e JavaScript](dashboard/) usa uma exportação agregada e validada da camada gold.
+Vendas podem crescer enquanto a margem cai. Este projeto usa SQL no Databricks para preparar e validar dados do Superstore, preservar o grão dos itens e reconciliar vendas e lucro antes da visualização. Inclui análise de descontos, agregações e avaliação temporal de previsão com PySpark.
 
-## Pergunta de negócio
+**[Abrir dashboard interativo](https://alexandresantosrodrigues.github.io/superstore-sales-dashboard/dashboard/)** · [Dashboard original no Databricks](https://dbc-487363e2-3add.cloud.databricks.com/dashboardsv3/01f1be8f35cf1b5cb74fbcc33ef34b11/published?o=7474654958318993) · [Auditoria e resultados](docs/data-quality.md)
 
-Como acompanhar vendas e rentabilidade por período, região e categoria sem mascarar problemas de qualidade ou multiplicar valores em joins?
+## Perguntas de negócio
 
-## Fonte e limites
+- Como acompanhar vendas e rentabilidade por período, região e categoria sem multiplicar valores em joins?
+- Onde o crescimento de vendas coincide com queda de margem?
+- Quais faixas de desconto concentram prejuízos?
+- Uma previsão de um mês à frente supera referências simples em períodos posteriores?
 
-[Superstore Sales — Kaggle](https://www.kaggle.com/datasets/vivek468/superstore-dataset-final), 9.994 linhas de itens de pedido, 21 campos, 2014–2017. A fonte atual no Databricks é `workspace.default.sample_superstore`, já importada. **Não há evidência de coleta direta de um sistema operacional nem de dados brutos originalmente sujos.** O arquivo, sua versão, hash e opções de ingestão ainda precisam ser documentados. Os nomes de produtos com `�` não serão reconstruídos por suposição.
+## Resultados registrados
 
-## Arquitetura atual
+Os valores abaixo estão documentados na [auditoria](docs/data-quality.md); correspondem às execuções registradas no projeto.
+
+| Indicador | Resultado |
+|---|---:|
+| Itens de pedido | 9.994 |
+| Pedidos distintos | 5.009 |
+| Histórico | 2014–2017, 48 meses |
+| Vendas | US$ 2.297.200,86 |
+| Lucro | US$ 286.397,02 |
+| Agregações da gold | 573 grupos de mês × região × categoria |
+| Controles do gate de qualidade | Cinco controles com resultado `PASSOU` |
+
+Em 2017, as vendas cresceram **20,36%** frente a 2016, mas a margem caiu de **13,43% para 12,74%**. Em Furniture, a margem caiu de **3,50% para 1,40%**.
+
+No recorte de Office Supplies com desconto acima de 30% em 2017, Binders concentra **85,70% do prejuízo**. Esses resultados ajudam a priorizar investigação de preços, custos e mix; não demonstram efeito causal do desconto.
+
+## Fonte, granularidade e limites
+
+Fonte: [Superstore Sales — Kaggle](https://www.kaggle.com/datasets/vivek468/superstore-dataset-final), com 9.994 linhas de itens de pedido e 21 campos. O grão da entrada é **um item de pedido identificado por Row ID**, não um pedido completo nem um produto.
+
+O processamento parte da tabela previamente importada `workspace.default.sample_superstore`. Os metadados registram upload pela interface do Databricks, mas o arquivo original, sua versão, hash e opções de ingestão ainda precisam ser recuperados. O projeto não demonstra coleta direta de um sistema operacional nem limpeza de um extrato operacional bruto.
+
+## Arquitetura implementada
+
+| Etapa | Responsabilidade | Arquivo principal |
+|---|---|---|
+| Entrada | Tabela Superstore previamente importada | `workspace.default.sample_superstore` |
+| Silver | Tipos, nomes, chave composta e sinalizadores | [01_silver.sql](sql/01_silver.sql) |
+| Gate de qualidade | Verificações antes da atualização da gold | [02_quality_gate.sql](sql/02_quality_gate.sql) |
+| Gold | Métricas aditivas por mês, região e categoria | [03_gold_month_region_category.sql](sql/03_gold_month_region_category.sql) |
+| Análise de descontos | Faixas de desconto e concentração das perdas | [04_discount_eda.sql](sql/04_discount_eda.sql) |
+| Características | Defasagens e média dos meses anteriores | [05_monthly_features.sql](sql/05_monthly_features.sql) |
+| Avaliação temporal | Baselines, validação de 2016 e teste de 2017 | [SQL de baselines](sql/06_baselines_validation_2016.sql) e [modeling/](modeling/) |
+| Visualização | Exportação agregada e dashboard HTML/CSS/JS | [export/](export/) e [dashboard/](dashboard/) |
+
+A landing/bronze do arquivo original ainda não está implementada. O gate foi executado manualmente; a interrupção automática da atualização depende de uma futura orquestração.
+
+## Decisões de qualidade e modelagem
+
+- **Chave de produto:** 32 Product IDs têm nomes diferentes, afetando 337 linhas. A silver deriva a chave do par ID + nome, preservando as linhas; Product ID isolado não é tratado como chave única de dimensão.
+- **Codificação:** 278 linhas têm o caractere de substituição `�` nos nomes. O problema é sinalizado, sem reconstrução de texto por suposição.
+- **CEP:** a importação interpretou Postal Code como número. Zeros iniciais inferidos são marcados; a conferência com o CSV original continua pendente.
+- **Margem:** calculada como soma do lucro dividida pela soma das vendas, inclusive após filtros. Margens de grupos não são somadas.
+- **Reconciliação:** os 573 grupos da gold representam as 9.994 linhas e reconciliam vendas e lucro com a origem.
+
+Veja regras, contagens e limitações em [docs/data-quality.md](docs/data-quality.md).
+
+## Previsão: validação e teste separados
+
+O objetivo experimental é prever **vendas do próximo mês por região × categoria**.
+
+1. Treino em 2015 e validação em 2016: comparação de baselines, Ridge, Random Forest e Gradient Boosted Trees.
+2. Seleção de Ridge e do baseline de referência por categoria a partir de 2016.
+3. Reajuste do modelo com 2015–2016 e avaliação final em 2017.
+
+As previsões são de **um mês à frente**, usando apenas meses anteriores já observados. Não se trata de prever os doze meses de 2017 de uma só vez. Durante o teste, as defasagens usam os meses anteriores de 2017, mas o modelo não é reentreinado.
+
+### Teste final de 2017
+
+| Categoria | WAPE Ridge | WAPE baseline escolhido em 2016 |
+|---|---:|---:|
+| Furniture | 41,32% | 44,22% |
+| Office Supplies | 40,86% | 53,26% |
+| Technology | 55,79% | 76,08% |
+
+Ridge apresentou menor erro nas três categorias, mas subestimou as vendas: o viés agregado foi **−US$ 183.648,46**. O histórico curto e os erros nos picos de vendas limitam o uso operacional. O ganho frente ao baseline não torna a previsão pronta para decisão sem monitoramento.
+
+Scripts: [validate_2016.py](modeling/validate_2016.py) e [test_2017.py](modeling/test_2017.py). Os resultados completos estão na [auditoria](docs/data-quality.md).
+
+## Como reproduzir no Databricks
+
+### Preparação e análise
+
+1. Disponibilize a mesma base em `workspace.default.sample_superstore`. Se usar outro nome, ajuste as referências dos scripts.
+2. Execute [sql/01_silver.sql](sql/01_silver.sql).
+3. Execute [sql/02_quality_gate.sql](sql/02_quality_gate.sql). Os cinco controles devem retornar `PASSOU`; em caso de falha, interrompa a atualização e investigue.
+4. Execute [sql/03_gold_month_region_category.sql](sql/03_gold_month_region_category.sql).
+5. Confira 573 grupos, 48 meses, 9.994 linhas representadas, US$ 2.297.200,86 em vendas e US$ 286.397,02 em lucro.
+6. Execute [sql/04_discount_eda.sql](sql/04_discount_eda.sql) para explorar descontos e perdas.
+
+### Avaliação de previsão
+
+1. Execute [sql/05_monthly_features.sql](sql/05_monthly_features.sql).
+2. Execute [sql/06_baselines_validation_2016.sql](sql/06_baselines_validation_2016.sql).
+3. Execute [modeling/validate_2016.py](modeling/validate_2016.py) em uma célula Python.
+4. Execute [modeling/test_2017.py](modeling/test_2017.py) para reproduzir o teste final já documentado.
+
+Em um notebook com linguagem padrão SQL, use `%python` na primeira linha da célula que recebe código Python, ou altere o idioma da célula. Os scripts utilizam Spark/PySpark no ambiente Databricks.
+
+2017 já foi usado no teste final publicado. Ajustar o modelo após consultar esses resultados exige uma nova avaliação independente; não transforma 2017 novamente em teste intocado.
+
+## Dashboard e contrato de dados
+
+O [dashboard](https://alexandresantosrodrigues.github.io/superstore-sales-dashboard/dashboard/) usa o arquivo [superstore-month-region-category.json](dashboard/data/superstore-month-region-category.json), exportado da gold.
+
+- Contém 573 agregações, sem clientes ou itens individuais.
+- Valida esquema, unicidade, contagem de linhas e totais financeiros antes de renderizar.
+- Representa vendas e lucro como inteiros em unidades de US$ 0,0001.
+- Recalcula as margens a partir dos totais filtrados.
+
+SHA-256 do payload canônico documentado:
 
 ```text
-sample_superstore (tabela previamente importada)
-    → silver_order_lines (tipos, nomes, chave de produto, sinalizadores)
-    → gold_month_region_category (métricas aditivas)
-    → exportação JSON validada (573 grupos)
-    → dashboard HTML/CSS/JS
+56e35ffaad2e6cd78a52f88d884579c0dead727ab809a82ed50f050c685b5576
 ```
 
-A camada de landing/bronze do arquivo original **ainda não foi implementada**. A preparação de características e os scripts de validação foram executados no Databricks. Em 2017, Ridge superou o baseline escolhido em 2016 nas três categorias, mas subestimou as vendas; veja as métricas e limitações na auditoria.
+Para reproduzir a exportação, consulte [export/dashboard_payload.py](export/dashboard_payload.py) e [as instruções para Databricks](export/COPIAR_NO_DATABRICKS.txt). Para abrir o dashboard localmente, sirva a pasta por HTTP; abrir o HTML por `file://` pode impedir o carregamento do JSON.
 
-## Como reproduzir no Databricks Free Edition
+## Arquivos do projeto
 
-1. Disponibilize o mesmo Superstore em `workspace.default.sample_superstore`. Se usar outra tabela, altere a referência nos arquivos SQL.
-2. Execute [`sql/01_silver.sql`](sql/01_silver.sql).
-3. Execute [`sql/02_quality_gate.sql`](sql/02_quality_gate.sql); todos os cinco campos devem retornar `PASSOU`. Se algum falhar, interrompa a atualização da gold e investigue.
-4. Execute [`sql/03_gold_month_region_category.sql`](sql/03_gold_month_region_category.sql) e confira 48 meses, 9.994 linhas representadas, US$ 2.297.200,86 em vendas e US$ 286.397,02 em lucro.
+| Local | Conteúdo |
+|---|---|
+| [FATURAMENTO.ipynb](FATURAMENTO.ipynb) | Notebook original |
+| [superstore_pipeline_analysis.ipynb](superstore_pipeline_analysis.ipynb) | Notebook de análise do pipeline |
+| [sql/](sql/) | Preparação, qualidade, agregação, EDA e baselines |
+| [modeling/](modeling/) | Validação de 2016 e teste final de 2017 |
+| [docs/data-quality.md](docs/data-quality.md) | Evidências, decisões e resultados |
+| [export/](export/) | Código e instruções de exportação |
+| [dashboard/](dashboard/) | HTML, CSS, JavaScript e dados agregados |
+| [index.html](index.html) | Encaminhamento para o dashboard |
 
-Os arquivos em `sql/` são Databricks SQL. Para executar os arquivos em `modeling/` dentro do notebook configurado como SQL, abra uma nova célula com `%python` **na primeira linha** e cole o código Python abaixo dela (ou mude o idioma da célula para Python). Não exigem instalação local. O gate foi executado manualmente; orquestração automática ainda é trabalho futuro.
+## Limitações e melhorias futuras
 
-## Evidências e decisões
+- Recuperar a procedência e a codificação do CSV original e documentar a ingestão.
+- Implementar landing/bronze com metadados do arquivo.
+- Automatizar o gate de qualidade e a atualização do JSON.
+- Investigar os maiores erros e o viés da previsão sem reutilizar o teste de 2017 para seleção.
+- Validar hipóteses sobre desconto, custo e mix antes de recomendar uma política comercial.
 
-A auditoria encontrou 32 `Product ID` com nomes de produtos diferentes (337 linhas; US$ 97.465,67 em vendas). Por isso, `Product ID` sozinho não é chave de dimensão. A silver deriva uma chave do par ID + nome e preserva todas as linhas. Há 278 linhas com caractere de substituição nos nomes, registradas sem correção arbitrária. A gold tem 573 grupos de mês × região × categoria e reconcilia os valores com a origem. Veja [auditoria e limitações](docs/data-quality.md).
-
-Em 2017 as vendas cresceram 20,36% frente a 2016, mas a margem caiu de 13,43% para 12,74%. Em Furniture ela caiu de 3,50% para 1,40%. Faixas de desconto mais altas coincidem com prejuízos maiores; **não há inferência causal** a partir dessa associação.
-
-## Próximas entregas
-
-- Rastrear a origem do CSV e a codificação; implementar landing/bronze com metadados de ingestão.
-- Automatizar o gate de qualidade e exportar dados agregados com checagem de totais.
-- Habilitar GitHub Pages a partir da raiz da branch principal após a revisão e o merge; `index.html` encaminha para `dashboard/`.
-- Avaliar previsão com baseline sazonal, validação temporal e análise de erros. Com apenas 48 meses, evitar prometer ganho de ML antes de medir.
-- Documentar o resultado final e redigir o post técnico de LinkedIn.
-
-## Estrutura
-
-```text
-FATURAMENTO.ipynb
-sql/01_silver.sql
-sql/02_quality_gate.sql
-sql/03_gold_month_region_category.sql
-docs/data-quality.md
-dashboard/index.html
- dashboard/styles.css
- dashboard/app.js
- dashboard/data/superstore-month-region-category.json
-README.md
-```
-
-## Dashboard estático
-
-O arquivo `dashboard/data/superstore-month-region-category.json` contém apenas 573 agregações mês × região × categoria, com linhas, unidades, vendas e lucro; não contém clientes ou itens individuais. Foi exportado da tabela gold no Databricks e publicado com autorização explícita do proprietário do repositório. SHA-256 do payload canônico: `56e35ffaad2e6cd78a52f88d884579c0dead727ab809a82ed50f050c685b5576`. O aplicativo verifica esquema, unicidade, contagem de linhas e totais financeiros antes de renderizar. Vendas e lucro internos são inteiros em unidades de US$ 0,0001; margens são recalculadas depois de cada filtro.
-
-Para abrir em GitHub Pages após integrar a PR: em **Settings → Pages**, escolha **Deploy from a branch**, `main`, pasta `/(root)`. O endereço previsto será `https://alexandresantosrodrigues.github.io/superstore-sales-dashboard/`. A página não foi publicada nesta PR em rascunho. Abrir o HTML diretamente pelo protocolo `file://` pode impedir o carregamento do JSON por restrições do navegador; use GitHub Pages ou um servidor HTTP.
+**Stack:** Databricks · SQL · Python/PySpark · HTML · CSS · JavaScript · GitHub Pages.
