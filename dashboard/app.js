@@ -49,6 +49,18 @@ function aggregate(rows, key) {
   return [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function monthlySeries(rows, selectedYear) {
+  const groups = new Map(aggregate(rows, 'month').map(group => [group.name, group]));
+  const months = [];
+  for (let year = selectedYear === 'all' ? 2014 : Number(selectedYear); year <= (selectedYear === 'all' ? 2017 : Number(selectedYear)); year++) {
+    for (let month = 1; month <= 12; month++) {
+      const name = `${year}-${String(month).padStart(2, '0')}`;
+      months.push(groups.get(name) || { name, salesFixed: 0, profitFixed: 0, orderLines: 0, units: 0, observed: false });
+    }
+  }
+  return months;
+}
+
 function margin(row) { return row.salesFixed ? 100 * row.profitFixed / row.salesFixed : 0; }
 function render() {
   const year = $('#year-filter').value, region = $('#region-filter').value, category = $('#category-filter').value;
@@ -59,7 +71,7 @@ function render() {
   $('#margin-kpi').textContent = percent(margin(total));
   $('#lines-kpi').textContent = integer(total.orderLines);
   $('#selection-caption').textContent = [year === 'all' ? '2014–2017' : year, region === 'all' ? 'Todas as regiões' : region, category === 'all' ? 'Todas as categorias' : category].join(' · ');
-  renderChart(aggregate(rows, 'month'));
+  renderChart(monthlySeries(rows, year));
   renderBars(aggregate(rows, 'category'), total.salesFixed);
   renderRegions(aggregate(rows, 'region'));
 }
@@ -138,6 +150,7 @@ function renderChart(months) {
       tooltip.replaceChildren();
       const title = document.createElement('b'); title.textContent = m.name;
       tooltip.append(title, document.createElement('br'), `Vendas: ${money(m.salesFixed / 10000)}`, document.createElement('br'), `Lucro: ${money(m.profitFixed / 10000)}`);
+      if (m.observed === false) tooltip.append(document.createElement('br'), 'Nenhum item registrado neste recorte');
       tooltip.hidden = false;
       tooltip.style.left = `${Math.min(75, Math.max(4, x(i) / 10))}%`;
       tooltip.style.top = '15%';
