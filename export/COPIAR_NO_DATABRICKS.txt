@@ -1,0 +1,40 @@
+%python
+import base64
+import gzip
+import hashlib
+import json
+from decimal import Decimal
+from pyspark.sql import functions as F
+
+TABLE = "workspace.default.superstore_gold_month_region_category"
+records = spark.table(TABLE).select(
+    F.date_format("sales_month", "yyyy-MM").alias("month"),
+    "region", "category", "order_lines", "units", "sales", "profit"
+).orderBy("month", "region", "category").collect()
+
+# Fixed-point integers: one unit equals USD 0.0001.
+scale = Decimal("10000")
+rows = [
+    [r["month"], r["region"], r["category"],
+     int(r["order_lines"]), int(r["units"]),
+     int(Decimal(str(r["sales"])) * scale),
+     int(Decimal(str(r["profit"])) * scale)]
+    for r in records
+]
+assert len(rows) == 573
+assert sum(r[3] for r in rows) == 9994
+
+payload = {
+    "schema": "superstore-month-region-category/v1",
+    "scale": 10000,
+    "columns": ["month", "region", "category", "order_lines",
+                "units", "sales", "profit"],
+    "rows": rows,
+}
+raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+print("ROWS", len(rows))
+print("SALES", str(Decimal(sum(r[5] for r in rows)) / scale))
+print("PROFIT", str(Decimal(sum(r[6] for r in rows)) / scale))
+print("SHA256", hashlib.sha256(raw).hexdigest())
+print("PAYLOAD_BASE64_GZIP")
+print(base64.b64encode(gzip.compress(raw, mtime=0)).decode("ascii"))
