@@ -20,7 +20,7 @@ sample_superstore (tabela previamente importada)
     → dashboard HTML/CSS/JS (planejado)
 ```
 
-A camada de landing/bronze do arquivo original, a modelagem preditiva e o dashboard web **ainda não foram implementados**.
+A camada de landing/bronze do arquivo original e o dashboard web **ainda não foram implementados**. A preparação de características e os scripts de validação preditiva foram adicionados, mas os modelos ainda não foram executados nem avaliados no teste final.
 
 ## Como reproduzir no Databricks Free Edition
 
