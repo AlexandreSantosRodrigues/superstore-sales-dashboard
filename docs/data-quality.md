@@ -64,3 +64,15 @@ Objetivo: vendas do próximo mês por região × categoria; 144 linhas de treino
 | Technology | mês do ano anterior (66,78%) | 55,30% | -59.849,02 |
 
 Random Forest e Gradient Boosted Trees também foram avaliados com parâmetros fixos e ficaram atrás de Ridge nas três categorias. Os vieses negativos permanecem relevantes; a capacidade de acompanhar crescimento é uma limitação. O ano de 2017 não foi consultado para seleção. O script `modeling/test_2017.py` fixa Ridge e os baselines escolhidos em 2016, reentreina com 2015–2016 e avalia 2017 uma única vez. Resultados finais ainda pendentes.
+
+## Teste final de 2017 (sem seleção posterior)
+
+Treino 2015–2016; 144 previsões mensais por região × categoria em 2017. O benchmark por categoria foi escolhido na validação de 2016. Previsão de um mês à frente em origem móvel; meses anteriores de 2017 já observados alimentam as defasagens, mas o modelo não é reentreinado durante o teste.
+
+| Categoria | Ridge WAPE | Baseline WAPE | Ridge viés USD |
+| --- | ---: | ---: | ---: |
+| Furniture | 41,32% | 44,22% | -28.541,99 |
+| Office Supplies | 40,86% | 53,26% | -81.707,40 |
+| Technology | 55,79% | 76,08% | -73.399,07 |
+
+O Ridge melhora o erro absoluto em todas as categorias, mas seu viés negativo agregado é US$ 183.648,46. Alguns dos dez maiores erros são picos de vendas em East/Technology (outubro e novembro), West/Technology (março) e Office Supplies (Central em janeiro; West em agosto). Portanto, o modelo é uma comparação experimental, não uma previsão operacional pronta para decisão sem monitoramento, calibragem e investigação dos picos. Não reajustar parâmetros após ver 2017 e continuar chamando-o de teste intocado.
