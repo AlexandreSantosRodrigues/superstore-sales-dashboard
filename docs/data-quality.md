@@ -52,3 +52,15 @@ As 232 linhas do recorte tiveram prejuízo: US$ 18.437,59 de prejuízo bruto e l
 ## CEPs com quatro dígitos após o upload
 
 A tabela importada contém 449 linhas e 52 valores distintos de `Postal Code` com quatro dígitos, em Connecticut, Maine, Massachusetts, New Hampshire, New Jersey, Rhode Island e Vermont. Outras 9.545 linhas têm cinco dígitos. Isso é consistente com zeros iniciais descartados pela conversão numérica, mas o CSV original ainda não foi conferido. A silver mantém `postal_code_source` como texto do número importado, deriva `postal_code` com `LPAD(..., 5, '0')` apenas nos valores de quatro dígitos dos EUA e marca `postal_code_inferred_zero`. Trata-se de inferência reversível, não de valor confirmado da fonte.
+
+## Validação temporal da previsão
+
+Objetivo: vendas do próximo mês por região × categoria; 144 linhas de treino em 2015 e 144 de validação em 2016. As 3 combinações ausentes na origem foram preenchidas com zero observado no dataset e sinalizadas. A comparação é de um mês à frente com atualização mensal dos valores passados; não é uma previsão em lote de doze meses feita no fim de 2016.
+
+| Categoria | Melhor baseline 2016 (WAPE) | Ridge 2016 (WAPE) | Ridge, viés USD |
+| --- | ---: | ---: | ---: |
+| Furniture | mês do ano anterior (53,49%) | 40,78% | -25.592,80 |
+| Office Supplies | média de 3 meses (55,18%) | 39,22% | -46.103,03 |
+| Technology | mês do ano anterior (66,78%) | 55,30% | -59.849,02 |
+
+Random Forest e Gradient Boosted Trees também foram avaliados com parâmetros fixos e ficaram atrás de Ridge nas três categorias. Os vieses negativos permanecem relevantes; a capacidade de acompanhar crescimento é uma limitação. O ano de 2017 não foi consultado para seleção. O script `modeling/test_2017.py` fixa Ridge e os baselines escolhidos em 2016, reentreina com 2015–2016 e avalia 2017 uma única vez. Resultados finais ainda pendentes.
