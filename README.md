@@ -1,6 +1,6 @@
 # Superstore Sales | engenharia de dados no Databricks
 
-Projeto em evolução: do notebook exploratório para um pipeline SQL com contratos de qualidade, camada tratada e agregações para análise. O dashboard original continua disponível no [Databricks](https://dbc-487363e2-3add.cloud.databricks.com/dashboardsv3/01f1be8f35cf1b5cb74fbcc33ef34b11/published?o=7474654958318993). Um dashboard em HTML, CSS e JavaScript será construído após a exportação validada dos dados.
+Projeto em evolução: do notebook exploratório para um pipeline SQL com contratos de qualidade, camada tratada e agregações para análise. O dashboard original continua disponível no [Databricks](https://dbc-487363e2-3add.cloud.databricks.com/dashboardsv3/01f1be8f35cf1b5cb74fbcc33ef34b11/published?o=7474654958318993). O [dashboard em HTML, CSS e JavaScript](dashboard/) usa uma exportação agregada e validada da camada gold.
 
 ## Pergunta de negócio
 
@@ -16,11 +16,11 @@ Como acompanhar vendas e rentabilidade por período, região e categoria sem mas
 sample_superstore (tabela previamente importada)
     → silver_order_lines (tipos, nomes, chave de produto, sinalizadores)
     → gold_month_region_category (métricas aditivas)
-    → exportação JSON validada (planejada)
-    → dashboard HTML/CSS/JS (planejado)
+    → exportação JSON validada (573 grupos)
+    → dashboard HTML/CSS/JS
 ```
 
-A camada de landing/bronze do arquivo original e o dashboard web **ainda não foram implementados**. A preparação de características e os scripts de validação foram executados no Databricks. Em 2017, Ridge superou o baseline escolhido em 2016 nas três categorias, mas subestimou as vendas; veja as métricas e limitações na auditoria.
+A camada de landing/bronze do arquivo original **ainda não foi implementada**. A preparação de características e os scripts de validação foram executados no Databricks. Em 2017, Ridge superou o baseline escolhido em 2016 nas três categorias, mas subestimou as vendas; veja as métricas e limitações na auditoria.
 
 ## Como reproduzir no Databricks Free Edition
 
@@ -41,7 +41,7 @@ Em 2017 as vendas cresceram 20,36% frente a 2016, mas a margem caiu de 13,43% pa
 
 - Rastrear a origem do CSV e a codificação; implementar landing/bronze com metadados de ingestão.
 - Automatizar o gate de qualidade e exportar dados agregados com checagem de totais.
-- Publicar o dashboard estático em HTML/CSS/JS.
+- Habilitar GitHub Pages a partir da raiz da branch principal após a revisão e o merge; `index.html` encaminha para `dashboard/`.
 - Avaliar previsão com baseline sazonal, validação temporal e análise de erros. Com apenas 48 meses, evitar prometer ganho de ML antes de medir.
 - Documentar o resultado final e redigir o post técnico de LinkedIn.
 
@@ -53,5 +53,15 @@ sql/01_silver.sql
 sql/02_quality_gate.sql
 sql/03_gold_month_region_category.sql
 docs/data-quality.md
+dashboard/index.html
+ dashboard/styles.css
+ dashboard/app.js
+ dashboard/data/superstore-month-region-category.json
 README.md
 ```
+
+## Dashboard estático
+
+O arquivo `dashboard/data/superstore-month-region-category.json` contém apenas 573 agregações mês × região × categoria, com linhas, unidades, vendas e lucro; não contém clientes ou itens individuais. Foi exportado da tabela gold no Databricks e publicado com autorização explícita do proprietário do repositório. SHA-256 do payload canônico: `56e35ffaad2e6cd78a52f88d884579c0dead727ab809a82ed50f050c685b5576`. O aplicativo verifica esquema, unicidade, contagem de linhas e totais financeiros antes de renderizar. Vendas e lucro internos são inteiros em unidades de US$ 0,0001; margens são recalculadas depois de cada filtro.
+
+Para abrir em GitHub Pages após integrar a PR: em **Settings → Pages**, escolha **Deploy from a branch**, `main`, pasta `/(root)`. O endereço previsto será `https://alexandresantosrodrigues.github.io/superstore-sales-dashboard/`. A página não foi publicada nesta PR em rascunho. Abrir o HTML diretamente pelo protocolo `file://` pode impedir o carregamento do JSON por restrições do navegador; use GitHub Pages ou um servidor HTTP.
