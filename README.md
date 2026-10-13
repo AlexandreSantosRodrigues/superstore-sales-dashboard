@@ -20,7 +20,7 @@ sample_superstore (tabela previamente importada)
     → dashboard HTML/CSS/JS (planejado)
 ```
 
-A camada de landing/bronze do arquivo original e o dashboard web **ainda não foram implementados**. A preparação de características e os scripts de validação preditiva foram adicionados, mas os modelos ainda não foram executados nem avaliados no teste final.
+A camada de landing/bronze do arquivo original e o dashboard web **ainda não foram implementados**. A preparação de características e os scripts de validação foram executados no Databricks. Em 2017, Ridge superou o baseline escolhido em 2016 nas três categorias, mas subestimou as vendas; veja as métricas e limitações na auditoria.
 
 ## Como reproduzir no Databricks Free Edition
 
@@ -29,7 +29,7 @@ A camada de landing/bronze do arquivo original e o dashboard web **ainda não fo
 3. Execute [`sql/02_quality_gate.sql`](sql/02_quality_gate.sql); todos os cinco campos devem retornar `PASSOU`. Se algum falhar, interrompa a atualização da gold e investigue.
 4. Execute [`sql/03_gold_month_region_category.sql`](sql/03_gold_month_region_category.sql) e confira 48 meses, 9.994 linhas representadas, US$ 2.297.200,86 em vendas e US$ 286.397,02 em lucro.
 
-Os scripts são Databricks SQL; não exigem instalação local. O gate foi executado manualmente; orquestração automática ainda é trabalho futuro.
+Os arquivos em `sql/` são Databricks SQL. Para executar os arquivos em `modeling/` dentro do notebook configurado como SQL, abra uma nova célula com `%python` **na primeira linha** e cole o código Python abaixo dela (ou mude o idioma da célula para Python). Não exigem instalação local. O gate foi executado manualmente; orquestração automática ainda é trabalho futuro.
 
 ## Evidências e decisões
 
