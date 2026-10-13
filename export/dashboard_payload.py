@@ -1,5 +1,4 @@
-# Databricks notebook in SQL mode: paste the entire block into a NEW cell.
-%python
+# Databricks Python notebook cell. If notebook defaults to SQL, prefix with %python.
 import base64
 import gzip
 import hashlib
